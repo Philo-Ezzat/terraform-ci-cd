@@ -6,8 +6,8 @@ pool:
 
 variables:
   subscription: azure-cli-2024-10-14-06-24-51
-  resourceGroup: resourcegroup-tfstate
-  storageAccount: terraformtfstateskip
+  resourceGroup: aks-cluster_group
+  storageAccount: terraformstateskip001
   container: tfstate
   tfstateFile: terraform.tfstate
   anyTfChanges: false
