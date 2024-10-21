@@ -15,9 +15,12 @@ variables:
 steps:
 
 - task: TerraformInstaller@0
-  displayName: install Terraform v1.4.5  # Update to a newer version if possible
+  displayName: install Terraform v1.4.5
   inputs:
     terraformVersion: '1.4.5'
+
+- script: terraform --version
+  displayName: 'Check Terraform Version'
 
 - task: TerraformTaskV1@0
   displayName: terraform init
@@ -30,6 +33,9 @@ steps:
     backendAzureRmStorageAccountName: '$(storageAccount)'
     backendAzureRmContainerName: '$(container)'
     backendAzureRmKey: '$(tfstateFile)'
+
+- script: ls -al /opt/hostedtoolcache/terraform/1.4.5/x64/
+  displayName: 'List Terraform Installation Directory'
 
 - task: TerraformTaskV1@0
   displayName: terraform plan -out=tfplan
