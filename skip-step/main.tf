@@ -1,15 +1,15 @@
-terraform{
-    backend "azurerm" {
-      name = "felo"
+terraform {
+  required_providers {
+    azurerm = {
+      source  = "hashicorp/azurerm"
+      version = "~> 2.0"
     }
-    
-}
-provider "azurerm"{
-    version= ">=2.0"
-    feature{}
+  }
+  required_version = ">= 0.12.0"
 }
 
-resource "azurerm_resource_group" "RG12"{
-name = "best resource group"
-location = "West Europe"
+provider "azurerm" {
+  features {}
 }
+
+# Add your resource definitions below
