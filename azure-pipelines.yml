@@ -1,6 +1,3 @@
-# trigger:
-# - master
-
 pool:
   vmImage: 'ubuntu-latest'
 
@@ -14,15 +11,40 @@ variables:
 
 steps:
 
-- task: TerraformInstaller@0
-  displayName: install Terraform v1.9.8
+- task: AzureCLI@2
+  displayName: 'Create Resource Group'
   inputs:
-    terraformVersion: '1.9.8'
+    azureSubscription: '$(subscription)'
+    scriptType: 'bash'
+    scriptLocation: 'inlineScript'
+    inlineScript: |
+      az group create --name $(resourceGroup) --location westeurope
 
-- script: terraform --version
-  displayName: 'Check Terraform Version'
+- task: AzureCLI@2
+  displayName: 'Create Storage Account'
+  inputs:
+    azureSubscription: '$(subscription)'
+    scriptType: 'bash'
+    scriptLocation: 'inlineScript'
+    inlineScript: |
+      az storage account create --name $(storageAccount) --resource-group $(resourceGroup) --location westeurope --sku Standard_LRS
+
+- task: AzureCLI@2
+  displayName: 'Create Blob Container'
+  inputs:
+    azureSubscription: '$(subscription)'
+    scriptType: 'bash'
+    scriptLocation: 'inlineScript'
+    inlineScript: |
+      az storage container create --name $(container) --account-name $(storageAccount)
+
+- task: TerraformInstaller@0
+  displayName: install Terraform v0.12.28
+  inputs:
+    terraformVersion: '0.12.28'
 
 - task: TerraformTaskV1@0
+  displayName: terraform init
   inputs:
     provider: 'azurerm'
     command: 'init'
@@ -48,14 +70,13 @@ steps:
     workingDirectory: '$(System.DefaultWorkingDirectory)/skip-step'
     targetType: 'inline'
     script: |
-      $plan = terraform show -json tfplan | ConvertFrom-Json
-      $actions = $plan.resource_changes | ForEach-Object { $_.change.actions } | Select-Object -Unique
+      $plan = $(terraform show -json tfplan | ConvertFrom-Json)
+      $actions = $plan.resource_changes.change.actions
       Write-Host "Terraform actions : $actions"
-      if ($actions -match 'create|delete|update') {
+      if (($actions -contains 'create') -or ($actions -contains 'delete') -or ($actions -contains 'update')) {
         Write-Host "Terraform will perform the following actions : $actions"
         Write-Host "##vso[task.setvariable variable=anyTfChanges;]true"
-      }
-      else {
+      } else {
         Write-Host "There is no change detected in Terraform tfplan file"
       }
 
