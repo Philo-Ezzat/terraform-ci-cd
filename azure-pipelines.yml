@@ -1,6 +1,3 @@
-# trigger:
-# - master
-
 pool:
   vmImage: 'ubuntu-latest'
 
@@ -13,6 +10,15 @@ variables:
   anyTfChanges: false
 
 steps:
+
+- task: AzureCLI@2
+  displayName: 'Create Resource Group'
+  inputs:
+    azureSubscription: '$(subscription)'
+    scriptType: 'bash'
+    scriptLocation: 'inlineScript'
+    inlineScript: |
+      az group create --name $(resourceGroup) --location westeurope
 
 - task: TerraformInstaller@0
   displayName: install Terraform v0.12.28
@@ -38,7 +44,6 @@ steps:
     command: 'plan'
     workingDirectory: '$(System.DefaultWorkingDirectory)/skip-step'
     commandOptions: '-out=tfplan'
-    # commandOptions: '-detailed-exitcode -out=tfplan'
     environmentServiceNameAzureRM: '$(subscription)'
 
 - task: PowerShell@2
@@ -47,23 +52,19 @@ steps:
     workingDirectory: '$(System.DefaultWorkingDirectory)/skip-step'
     targetType: 'inline'
     script: |
-      # Write-Host "LASTEXITCODE : $LASTEXITCODE"
       $plan = $(terraform show -json tfplan | ConvertFrom-Json)
       $actions = $plan.resource_changes.change.actions
       Write-Host "Terraform actions : $actions"
-      if (($actions -contains 'create') -or ($actions -contains 'delete') -or ($actions -contains 'update'))
-      {
+      if (($actions -contains 'create') -or ($actions -contains 'delete') -or ($actions -contains 'update')) {
         Write-Host "Terraform will perform the following actions : $actions"
         Write-Host "##vso[task.setvariable variable=anyTfChanges;]true"
-      }
-      else
-      {
+      } else {
         Write-Host "There is no change detected in Terraform tfplan file"
       }
 
 - task: TerraformTaskV1@0
   displayName: terraform apply tfplan
-  condition: eq(variables.anyTfChanges, true)
+  condition: eq(variables.anyTfChanges, true)
   inputs:
     provider: 'azurerm'
     command: 'apply'
