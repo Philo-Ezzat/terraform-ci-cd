@@ -20,6 +20,24 @@ steps:
     inlineScript: |
       az group create --name $(resourceGroup) --location westeurope
 
+- task: AzureCLI@2
+  displayName: 'Create Storage Account'
+  inputs:
+    azureSubscription: '$(subscription)'
+    scriptType: 'bash'
+    scriptLocation: 'inlineScript'
+    inlineScript: |
+      az storage account create --name $(storageAccount) --resource-group $(resourceGroup) --location westeurope --sku Standard_LRS
+
+- task: AzureCLI@2
+  displayName: 'Create Blob Container'
+  inputs:
+    azureSubscription: '$(subscription)'
+    scriptType: 'bash'
+    scriptLocation: 'inlineScript'
+    inlineScript: |
+      az storage container create --name $(container) --account-name $(storageAccount)
+
 - task: TerraformInstaller@0
   displayName: install Terraform v0.12.28
   inputs:
